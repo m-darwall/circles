@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Circles</title>
+    <style>
+      body{
+        height: 100vh;
+        background-color: black;
+      }
+    </style>
+</head>
+<body>
+    <canvas id="circles-canvas"></canvas>
+    <script src="circles.js"></script>
+    <script>
+        let drawer = new CircleDrawer("circles-canvas", 1, 10);
+        drawer.start();
+    </script>
+</body>
+</html>
