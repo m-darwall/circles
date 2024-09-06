@@ -8,14 +8,55 @@
         height: 100vh;
         background-color: black;
       }
+      #options-container{
+          background-color: #555555;
+          color: white;
+          bottom: 0;
+          right: 0;
+          position: fixed;
+          z-index: 2;
+          border-color: white;
+          border-radius: 20px;
+          padding: 20px 20px 5vh 20px;
+          opacity: 90%;
+      }
     </style>
 </head>
 <body>
     <canvas id="circles-canvas"></canvas>
+    <div id="options-container">
+        <h2 id="circle-options">Options</h2>
+        <label for="min-radius"  id="min-radius-label">Min. Radius</label><br>
+        <input type="range" min="1" max="100" value="1" class="slider" id="min-radius"><br>
+        <label for="max-radius"  id="max-radius-label">Max. Radius</label><br>
+        <input type="range" min="1" max="100" value="10" class="slider" id="max-radius"><br>
+        <label for="thoroughness"  id="thoroughness-label">Thoroughness</label><br>
+        <input type="range" min="1" max="100" value="10" class="slider" id="thoroughness"><br>
+        <label for="approach-select" id="approach-label">Approach</label><br>
+        <select id="approach-select">
+            <option value="breadth-first">Grow</option>
+            <option value="depth-first">Trail</option>
+            <option value="random">Wherever</option>
+        </select><br>
+        <button type="button" id="pause-button">Pause</button>
+        <button type="button" id="resume-button">Resume</button>
+        <button type="button" id="restart-button">Restart</button>
+    </div>
     <script src="circles.js"></script>
     <script>
-        let drawer = new CircleDrawer("circles-canvas", 1, 10);
-        drawer.start();
+        let drawer = new CircleDrawer("circles-canvas");
+        drawer.start(1, 10, 10, "breadth-first");
+
+        document.getElementById("pause-button").onclick = function(){drawer.stop();};
+        document.getElementById("resume-button").onclick = function(){drawer.resume();};
+        document.getElementById("restart-button").onclick = function(){
+            drawer.reset();
+            drawer.start(
+                Number(document.getElementById("min-radius").value),
+                Number(document.getElementById("max-radius").value),
+                Number(document.getElementById("thoroughness").value),
+                document.getElementById("approach-select").value);
+        };
     </script>
 </body>
 </html>
