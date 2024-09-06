@@ -1,11 +1,12 @@
 class Circle{
-    constructor(x, y, r, ctx) {
+    constructor(x, y, r, ctx, drawer) {
         this.x = x;
         this.y = y;
         this.r = r;
         this.ctx = ctx;
         this.failures = 0;
         this.dead = false;
+        this.drawer = drawer;
     }
 
     draw(){
@@ -24,7 +25,7 @@ class Circle{
 
     fail(){
         this.failures++;
-        if(this.failures > 10){
+        if(this.failures > this.drawer.thoroughness){
             this.dead = true;
         }
     }
@@ -50,21 +51,33 @@ class Canvas {
 
 class CircleDrawer{
     #circles = []
+    #live_circles = []
     #circle_count = 0;
-    constructor(canvas_id, min_radius, max_radius) {
+    constructor(canvas_id) {
         this.canvas = new Canvas(canvas_id);
-        this.min_radius = min_radius;
-        this.max_radius = max_radius;
         this.keep_going = false;
-        window.addEventListener("resize", this.reset.bind(this), true);
+        window.addEventListener("resize", this.restart.bind(this), true);
     }
 
-    start(){
+    start(min_radius, max_radius, thoroughness, approach){
+        this.reset()
+        this.min_radius = min_radius;
+        this.max_radius = max_radius;
+        this.thoroughness = thoroughness;
+        this.approach = approach;
         this.keep_going = true;
         if(this.#circle_count === 0){
             this.canvas.render();
         }
         this.canvas.context.strokeStyle = "#ffffff";
+        window.requestAnimationFrame(this.draw_circle.bind(this));
+    }
+
+    resume(){
+        this.keep_going = true;
+        if(this.#circle_count === 0){
+            this.canvas.render();
+        }
         window.requestAnimationFrame(this.draw_circle.bind(this));
     }
 
@@ -76,7 +89,27 @@ class CircleDrawer{
         this.stop();
         this.#circle_count = 0;
         this.#circles = [];
-        this.start();
+        this.#live_circles = [];
+    }
+
+    restart(){
+        this.start(this.min_radius, this.max_radius, this.thoroughness, this.approach);
+    }
+
+    choose_next(){
+        let i;
+        this.#live_circles = this.#live_circles.filter(function(a){return !a.dead});
+        if(this.#live_circles.length === 0){
+            return false;
+        }
+        if(this.approach === "depth-first"){
+            i = this.#live_circles.length - 1;
+        } else if (this.approach === "breadth-first"){
+            i = 0;
+        } else if (this.approach === "random"){
+            i = Math.floor(Math.random()*(this.#live_circles.length - 1));
+        }
+        return this.#live_circles[i]
     }
 
     draw_circle(){
@@ -85,18 +118,24 @@ class CircleDrawer{
                 this.canvas.width/2,
                 this.canvas.height/2,
                 Math.random()*(this.max_radius - this.min_radius) + this.min_radius,
-                this.canvas.context));
+                this.canvas.context,
+                this));
             this.#circle_count++;
+            this.#live_circles.push(this.#circles[this.#circle_count - 1]);
         } else {
             let found = false;
             while(!found){
-                let current = this.#circles[(Math.floor(Math.random() * this.#circle_count))];
+                let current = this.choose_next();
+                if(!current){
+                    this.stop();
+                    return;
+                }
                 let direction = Math.random()*2*Math.PI;
                 let distance = current.r + this.min_radius + Math.random()*(this.max_radius-this.min_radius);
                 let x = current.x + Math.cos(direction)*distance;
                 let y = current.y + Math.sin(direction)*distance;
                 let r = distance - current.r;
-                let attempt = new Circle(x, y, r, this.canvas.context);
+                let attempt = new Circle(x, y, r, this.canvas.context, this);
                 if(x>0 && x<this.canvas.width && y>0 && y<this.canvas.height){
                     let i = 0;
                     let intersect = false;
@@ -110,6 +149,7 @@ class CircleDrawer{
                     }
                     if(!intersect){
                         this.#circles.push(attempt);
+                        this.#live_circles.push(attempt);
                         this.#circle_count++;
                         found = true;
                     }
